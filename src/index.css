@@ -1,0 +1,332 @@
+@import "tailwindcss";
+@import "tippy.js/dist/tippy.css";
+
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-sidebar: #1a1a2e;
+  --text-primary: #1a1a1a;
+  --text-secondary: #6b7280;
+  --text-sidebar: #e2e8f0;
+  --accent: #4f46e5;
+  --accent-light: #eef2ff;
+  --border: #e5e7eb;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ─── Editor page layout ─────────────────────────────────────── */
+
+.editor-page {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  background: var(--bg-primary);
+}
+
+.editor-content-area {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 56px 48px 120px;
+}
+
+.editor-icon-btn {
+  font-size: 48px;
+  line-height: 1;
+  display: block;
+  margin-bottom: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s;
+}
+.editor-icon-btn:hover { transform: scale(1.1); }
+
+.editor-title {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-primary);
+  outline: none;
+  margin-bottom: 6px;
+  word-break: break-word;
+}
+
+.editor-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.editor-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+}
+
+/* ─── Tiptap prose ───────────────────────────────────────────── */
+
+.weeklyflow-editor {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  outline: none;
+  min-height: 400px;
+  padding-top: 16px;
+}
+
+.weeklyflow-editor:focus,
+.ProseMirror:focus {
+  outline: none;
+}
+
+.weeklyflow-editor > * + * {
+  margin-top: 0.15em;
+}
+
+.weeklyflow-editor p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.weeklyflow-editor h1 {
+  font-size: 2em;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-top: 0.6em;
+  margin-bottom: 0.2em;
+}
+
+.weeklyflow-editor h1:first-child {
+  margin-top: 0;
+}
+
+.weeklyflow-editor h2 {
+  font-size: 1.35em;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.1em;
+  margin-bottom: 0.2em;
+  padding-bottom: 0.15em;
+  border-bottom: 1px solid var(--border);
+}
+
+.weeklyflow-editor h3 {
+  font-size: 1.1em;
+  font-weight: 600;
+  margin-top: 1.25em;
+  margin-bottom: 0.2em;
+}
+
+.weeklyflow-editor blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1em;
+  margin-left: 0;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.weeklyflow-editor code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.875em;
+  background: #f3f4f6;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  color: #c026d3;
+}
+
+.weeklyflow-editor pre {
+  background: #1e1e2e;
+  border-radius: 8px;
+  padding: 1em 1.25em;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.weeklyflow-editor pre code {
+  background: transparent;
+  color: #cdd6f4;
+  padding: 0;
+}
+
+.weeklyflow-editor ul:not([data-type="taskList"]),
+.weeklyflow-editor ol {
+  padding-left: 1.5em;
+  margin: 0.4em 0;
+}
+
+.weeklyflow-editor li { margin: 0.2em 0; }
+
+/* ─── Task List ──────────────────────────────────────────────── */
+
+.weeklyflow-editor ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+  margin: 0.4em 0;
+}
+
+.weeklyflow-editor ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.weeklyflow-editor ul[data-type="taskList"] li label {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-top: 5px;
+  cursor: pointer;
+}
+
+/* Custom checkbox — override all native styles */
+.weeklyflow-editor ul[data-type="taskList"] li label input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  position: relative;
+  display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.weeklyflow-editor ul[data-type="taskList"] li label input[type="checkbox"]:hover {
+  border-color: var(--accent);
+}
+
+.weeklyflow-editor ul[data-type="taskList"] li label input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.weeklyflow-editor ul[data-type="taskList"] li label input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: 2px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+/* Task text */
+.weeklyflow-editor ul[data-type="taskList"] li > div {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Checked task */
+.weeklyflow-editor ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through;
+  color: #9ca3af;
+}
+
+/* ─── Kanban card ────────────────────────────────────────────── */
+
+.kanban-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: grab;
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.15s;
+  user-select: none;
+}
+
+.kanban-card:hover {
+  box-shadow: var(--card-hover-shadow);
+}
+
+.kanban-card:active {
+  cursor: grabbing;
+}
+
+/* ─── Project checkboxes (match editor style) ───────────────── */
+
+.project-checkbox {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  position: relative;
+  display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.project-checkbox:hover { border-color: var(--accent); }
+
+.project-checkbox:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.project-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: 2px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+.project-task-row:hover {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  margin: 0 -8px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* ─── Animations ─────────────────────────────────────────────── */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ─── Placeholder ────────────────────────────────────────────── */
+
+.weeklyflow-editor p.is-empty::before,
+.weeklyflow-editor .is-empty:not(li):first-child::before {
+  content: attr(data-placeholder);
+  color: #d1d5db;
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
