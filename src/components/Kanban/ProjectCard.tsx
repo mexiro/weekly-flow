@@ -1,4 +1,5 @@
-import { useRef, useState, useEffect, KeyboardEvent } from 'react'
+import { useRef, useState, useEffect } from 'react'
+import type { KeyboardEvent } from 'react'
 import { differenceInCalendarWeeks, parseISO } from 'date-fns'
 import type { Project } from '../../types'
 import { useProjectStore } from '../../store/projectStore'

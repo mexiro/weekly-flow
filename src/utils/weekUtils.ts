@@ -1,6 +1,6 @@
 import { getISOWeek, getISOWeekYear, startOfISOWeek, endOfISOWeek, format, addWeeks, addDays } from 'date-fns'
 import type { JSONContent } from '@tiptap/react'
-import type { WeeklyPage } from '../types'
+import type { WeeklyPage, Task } from '../types'
 
 export function getWeekId(date: Date): string {
   const week = getISOWeek(date)
@@ -70,6 +70,49 @@ export function createDefaultContent(weekNumber: number, _year: number): JSONCon
       ...dayNodes,
     ],
   }
+}
+
+/** Count all taskItem nodes in a page's Tiptap JSON (recursive). */
+export function countTaskItemsInPage(page: WeeklyPage): number {
+  let n = 0
+  const walk = (node: any) => {
+    if (!node) return
+    if (node.type === 'taskItem') n++
+    if (Array.isArray(node.content)) node.content.forEach(walk)
+  }
+  walk(page.content)
+  return n
+}
+
+/** Consecutive ISO weeks (ending at current week) that have ≥1 taskItem. */
+export function computeWritingStreak(pages: Record<string, WeeklyPage>): number {
+  const now = new Date()
+  let wn = getISOWeek(now)
+  let yr = getISOWeekYear(now)
+  const active = Object.values(pages).filter(p => countTaskItemsInPage(p) > 0)
+  let streak = 0
+  for (;;) {
+    if (!active.find(p => p.weekNumber === wn && p.year === yr)) break
+    streak++
+    const weekStart = addWeeks(startOfISOWeek(new Date(yr, 0, 4)), wn - 1)
+    const prev = addDays(weekStart, -7)
+    wn = getISOWeek(prev)
+    yr = getISOWeekYear(prev)
+  }
+  return streak
+}
+
+/** done / total / pct for a given weekId from the task store snapshot. */
+export function weekProgress(tasks: Task[], weekId: string): { done: number; total: number; pct: number } {
+  const w = tasks.filter(t => t.weekId === weekId)
+  const total = w.length
+  const done  = w.filter(t => t.status === 'done').length
+  return { done, total, pct: total === 0 ? 0 : done / total }
+}
+
+/** "Monday" … "Sunday" for today in local time. */
+export function getTodayDayLabel(): string {
+  return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()]
 }
 
 export function createWeekPage(weekNumber: number, year: number): WeeklyPage {

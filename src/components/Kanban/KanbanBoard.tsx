@@ -8,7 +8,6 @@ import {
   closestCenter,
 } from '@dnd-kit/core'
 import type { DragStartEvent, DragOverEvent, DragEndEvent } from '@dnd-kit/core'
-import { arrayMove } from '@dnd-kit/sortable'
 import { KanbanColumn } from './KanbanColumn'
 import { KanbanCard } from './KanbanCard'
 import { KanbanTabs } from './KanbanTabs'

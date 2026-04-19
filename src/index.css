@@ -2,17 +2,39 @@
 @import "tippy.js/dist/tippy.css";
 
 :root {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-sidebar: #1a1a2e;
-  --text-primary: #1a1a1a;
-  --text-secondary: #6b7280;
-  --text-sidebar: #e2e8f0;
-  --accent: #4f46e5;
-  --accent-light: #eef2ff;
-  --border: #e5e7eb;
-  --card-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  --card-hover-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  /* Warm paper palette (Direction 03 rebrand) */
+  --paper:        #f6f2ea;
+  --paper-2:      #efeadf;
+  --ink:          #1b1a17;
+  --ink-2:        #3a3832;
+  --ink-3:        #6b6860;
+  --ink-4:        #a09c92;
+  --rule:         #d9d2c3;
+  --rule-2:       #e7e1d2;
+  --accent:       #4b43c9;
+  --accent-soft:  #e8e6fb;
+  --ochre:        #b87a2a;
+  --ochre-soft:   #f3e6cf;
+  --green:        #3f7a3a;
+  --red:          #b44040;
+
+  /* Typography */
+  --sans:    'Inter', -apple-system, system-ui, sans-serif;
+  --serif:   'Source Serif 4', Georgia, serif;
+  --display: 'Fraunces', Georgia, serif;
+  --mono:    'JetBrains Mono', ui-monospace, monospace;
+
+  /* Legacy aliases — keep all existing components working */
+  --bg-primary:        #ffffff;
+  --bg-secondary:      var(--paper);
+  --bg-sidebar:        var(--paper);
+  --text-primary:      var(--ink);
+  --text-secondary:    var(--ink-3);
+  --text-sidebar:      var(--ink-2);
+  --accent-light:      var(--accent-soft);
+  --border:            var(--rule);
+  --card-shadow:       0 1px 3px rgba(40,34,20,0.06);
+  --card-hover-shadow: 0 4px 12px rgba(40,34,20,0.12);
 }
 
 body {

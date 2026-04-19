@@ -1,4 +1,5 @@
-import { useRef, useState, KeyboardEvent } from 'react'
+import { useRef, useState } from 'react'
+import type { KeyboardEvent } from 'react'
 import type { ProjectTask } from '../../types'
 import { useProjectStore } from '../../store/projectStore'
 
