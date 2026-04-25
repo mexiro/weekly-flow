@@ -5,6 +5,7 @@ import { WeekList }        from './WeekList'
 import { ProjectsSummary } from './ProjectsSummary'
 import { ViewSwitcher }    from './ViewSwitcher'
 import { DemoControls }    from './DemoControls'
+import { SyncIndicator }   from './SyncIndicator'
 
 export function Sidebar() {
   const { sidebarCollapsed, toggleSidebar } = useUIStore()
@@ -101,7 +102,7 @@ export function Sidebar() {
         fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink-4)',
         textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.7,
       }}>
-        <span>Local · no sync</span>
+        <SyncIndicator />
         <button
           onClick={toggleSidebar}
           style={{
