@@ -81,20 +81,26 @@ export function NewWeekModal({ onClose }: NewWeekModalProps) {
     const source = pages[rolloverSourceId]
     if (!source) { setError('Select a source week'); return }
 
-    // Find the next week after source
+    // Find the next free week slot: scan forward from the week after source
     const next = (() => {
-      // find a week slot that doesn't exist yet, starting from current
-      const cur = getCurrentWeekNumber()
-      const curY = getCurrentYear()
-      const id = `CW${cur}-${curY}`
-      if (!pages[id]) return { weekNumber: cur, year: curY }
-      // else pick next after source
-      return getNextWeek(source.weekNumber, source.year)
+      let { weekNumber: wn, year: yr } = getNextWeek(source.weekNumber, source.year)
+      for (let i = 0; i < 52; i++) {
+        if (!pages[`CW${wn}-${yr}`]) return { weekNumber: wn, year: yr }
+        const n = getNextWeek(wn, yr)
+        wn = n.weekNumber
+        yr = n.year
+      }
+      return null
     })()
+
+    if (!next) {
+      setError('No free week slot found in the next 52 weeks')
+      return
+    }
 
     const newId = `CW${next.weekNumber}-${next.year}`
     if (pages[newId]) {
-      setError(`CW${next.weekNumber}-${next.year} already exists — use Manual entry`)
+      setError(`${newId} already exists — use Manual entry`)
       return
     }
 
