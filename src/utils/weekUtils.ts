@@ -128,7 +128,7 @@ export function rolloverContent(
   source: JSONContent,
   mode: 'clone' | 'rollover',
   weekNumber: number,
-  year: number,
+  _year: number,
 ): JSONContent {
   // Walk source and collect taskItems into a flat array
   const carriedItems: JSONContent[] = []
