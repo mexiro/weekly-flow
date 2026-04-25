@@ -17,6 +17,8 @@ function getTextContent(node: JSONContent): string {
 
 function isDayHeading(text: string): string | null {
   const lower = text.toLowerCase().trim()
+  // Recognize "Unassigned" / "📥 Unassigned" as a valid grouping label
+  if (lower.includes('unassigned')) return 'Unassigned'
   const match = DAY_LABELS.find(day => lower === day || lower.startsWith(day))
   return match ? match.charAt(0).toUpperCase() + match.slice(1) : null
 }

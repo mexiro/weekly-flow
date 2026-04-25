@@ -116,30 +116,65 @@ export function getTodayDayLabel(): string {
 }
 
 /**
- * Clone all content from a source page, or roll over only unchecked taskItems.
- * In rollover mode: taskItem nodes with checked=true are dropped; paragraphs/headings kept.
+ * Build a new week's content from a source page.
+ * - 'rollover' mode: collect all unchecked taskItems from source, drop checked ones.
+ * - 'clone' mode: collect ALL taskItems from source.
+ *
+ * In both modes, tasks are placed under an "Unassigned" group (heading + taskList)
+ * at the top of the new week, ABOVE the standard Mon–Fri skeleton.
+ * The day headings remain empty so the user assigns tasks fresh.
  */
-export function rolloverContent(source: JSONContent, mode: 'clone' | 'rollover'): JSONContent {
-  if (mode === 'clone') return JSON.parse(JSON.stringify(source))
-
-  function filterNode(node: JSONContent): JSONContent | null {
+export function rolloverContent(
+  source: JSONContent,
+  mode: 'clone' | 'rollover',
+  weekNumber: number,
+  year: number,
+): JSONContent {
+  // Walk source and collect taskItems into a flat array
+  const carriedItems: JSONContent[] = []
+  function collect(node: JSONContent) {
     if (node.type === 'taskItem') {
-      if (node.attrs?.checked) return null
-      return { ...node, content: node.content?.map(filterNode).filter(Boolean) as JSONContent[] }
+      if (mode === 'rollover' && node.attrs?.checked) return
+      // Reset checked state for clone (fresh start) — unchecked-only for rollover already
+      const cleaned: JSONContent = {
+        ...node,
+        attrs: { ...node.attrs, checked: false },
+        content: node.content ? JSON.parse(JSON.stringify(node.content)) : [],
+      }
+      carriedItems.push(cleaned)
+      return
     }
-    if (node.type === 'taskList') {
-      const kept = node.content?.map(filterNode).filter(Boolean) as JSONContent[]
-      if (!kept || kept.length === 0) return null
-      return { ...node, content: kept }
-    }
-    if (node.content) {
-      return { ...node, content: node.content.map(filterNode).filter(Boolean) as JSONContent[] }
-    }
-    return node
+    if (node.content) node.content.forEach(collect)
   }
+  collect(source)
 
-  const filtered = filterNode(source)
-  return filtered ?? { type: 'doc', content: [] }
+  // Build the new doc: Goals heading + Unassigned (if any carried) + Mon–Fri skeleton
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+  const dayNodes: JSONContent[] = days.flatMap((day) => [
+    { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: day }] },
+    { type: 'paragraph', content: [] },
+  ])
+
+  const unassignedSection: JSONContent[] = carriedItems.length > 0
+    ? [
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '📥 Unassigned' }] },
+        { type: 'taskList', content: carriedItems },
+      ]
+    : []
+
+  return {
+    type: 'doc',
+    content: [
+      {
+        type: 'heading',
+        attrs: { level: 1 },
+        content: [{ type: 'text', text: `🎯 Week ${weekNumber} — Goals` }],
+      },
+      { type: 'paragraph', content: [] },
+      ...unassignedSection,
+      ...dayNodes,
+    ],
+  }
 }
 
 export function createWeekPage(weekNumber: number, year: number): WeeklyPage {

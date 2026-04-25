@@ -30,7 +30,7 @@ export function KanbanBoard() {
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [overColumn, setOverColumn] = useState<Task['status'] | null>(null)
   const [activeTab, setActiveTab] = useState<KanbanTab>('week')
-  const [filterThisWeek, setFilterThisWeek] = useState(false)
+  const [filterMode, setFilterMode] = useState<'all' | 'thisWeek' | 'carryover'>('all')
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
@@ -90,10 +90,12 @@ export function KanbanBoard() {
 
   const visibleTasks = (colId: Task['status']): Task[] => {
     let filtered = tasks.filter(t => t.status === colId)
-    if (filterThisWeek && activeWeekId) {
+    if (filterMode === 'thisWeek' && activeWeekId) {
       filtered = filtered.filter(t =>
         t.occurrences.some(o => o.weekId === activeWeekId)
       )
+    } else if (filterMode === 'carryover') {
+      filtered = filtered.filter(t => t.occurrences.length > 1)
     }
     return filtered
   }
@@ -107,8 +109,9 @@ export function KanbanBoard() {
           </h2>
           {activeTab === 'week' && (
             <div style={{ display: 'flex', gap: 6 }}>
-              <FilterChip label="All weeks" active={!filterThisWeek} onClick={() => setFilterThisWeek(false)} />
-              <FilterChip label="This week" active={filterThisWeek} onClick={() => setFilterThisWeek(true)} />
+              <FilterChip label="All weeks" active={filterMode === 'all'} onClick={() => setFilterMode('all')} />
+              <FilterChip label="This week" active={filterMode === 'thisWeek'} onClick={() => setFilterMode('thisWeek')} />
+              <FilterChip label="↻ Carried over" active={filterMode === 'carryover'} onClick={() => setFilterMode('carryover')} />
             </div>
           )}
         </div>

@@ -11,10 +11,10 @@ interface KanbanCardProps {
 function carryOverLabel(task: Task, pages: Record<string, any>): string | null {
   if (task.occurrences.length <= 1) return null
   const originPage = pages[task.originWeekId]
-  if (!originPage) return null
+  if (!originPage) return `↻ from ${task.originWeekId}`
   const weeks = differenceInCalendarWeeks(new Date(), parseISO(originPage.createdAt))
-  if (weeks < 1) return null
-  return `From ${task.originWeekId} · ${weeks}w open`
+  if (weeks < 1) return `↻ from ${task.originWeekId}`
+  return `↻ from ${task.originWeekId} · ${weeks}w open`
 }
 
 export function KanbanCard({ task }: KanbanCardProps) {
@@ -52,7 +52,7 @@ export function KanbanCard({ task }: KanbanCardProps) {
           fontSize: 11, padding: '2px 7px', borderRadius: 4,
           background: '#eef2ff', color: '#4f46e5', fontWeight: 500,
         }}>
-          {task.weekId}
+          {task.originWeekId}
         </span>
         {carryOver && (
           <span style={{

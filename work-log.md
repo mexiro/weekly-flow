@@ -19,8 +19,11 @@ All phases complete. App is fully functional locally at `localhost:5173`.
 | 9A | Project auto-completion + archive — status field, completedAt/archivedAt, store migration v2, "✓ Completed" badge, Archive/Delete menu |
 | 9B | "Open Nw" / completion date counter on project cards (date-fns) |
 | 9C | Cross-week task continuity — tasks persisted (weeklyflow:tasks), reconcileTasks() walks all pages, stable nanoid IDs, global Kanban, carry-over badge, "This week" filter chip |
+| 10A | Feature A complete — Cloud KV sync (Vercel edge fn + Upstash Redis, x-sync-secret header, debounced 3s push, pull-on-boot merge) |
+| 10B | Feature B — Week rollover from previous week (Clone / Roll-over modes) in NewWeekModal |
+| 10C | Rollover UX polish: carried tasks land in "📥 Unassigned" group (not in days). Kanban card shows `originWeekId` instead of latest weekId. New "↻ Carried over" filter chip on Kanban. Carry-over label updated to `↻ from CWxx · Nw open` |
 
-**Rollback tags:** `pre-sidebar-rebrand`, `pre-cloud-sync`
+**Rollback tags:** `pre-sidebar-rebrand`, `pre-cloud-sync`, `pre-rollover`, `v-rollover-done`
 
 ---
 
@@ -34,33 +37,25 @@ All phases complete. App is fully functional locally at `localhost:5173`.
 
 ---
 
-## Next: Feature A — Cloud KV Sync
+## Phase 10 Details (Apr 25, 2026)
 
-**Goal:** Persist data to Vercel KV (Upstash Redis) behind a shared-secret header so the app works across devices/browsers. No auth — single shared secret in an env var.
+**10A — Cloud KV sync (Feature A, complete):**
+- `api/sync.ts` — Vercel edge function, Upstash Redis (`@upstash/redis`), `x-sync-secret` header. GET returns snapshot, POST writes it.
+- `src/sync/cloudSync.ts` — `pullSnapshot`, `pushSnapshot`, `buildSnapshot`, `applySnapshot`, `schedulePush` (debounced 3s, blocked until first successful pull). Custom window events: `sync:push-start/done/fail`.
+- `App.tsx` — pulls on boot, applies snapshot if `remote.updatedAt > localMax`, subscribes weekStore + projectStore to trigger `schedulePush`.
+- `SidebarFooter` includes a `SyncIndicator` showing ●synced / ●syncing / ●offline.
 
-**Plan:**
-1. Create `api/sync.ts` Vercel serverless function — accepts `GET` (pull all keys) and `POST` (push a key/value). Protected by `Authorization: Bearer <SYNC_SECRET>` header.
-2. Add `VITE_SYNC_SECRET` + `VITE_KV_URL` to `.env.local` and Vercel env vars.
-3. Create `src/utils/kvSync.ts` — thin wrapper: `pushKey(key, value)`, `pullKey(key)`, `pullAll()`.
-4. In each Zustand store (`weekStore`, `taskStore`, `projectStore`, `uiStore`), add a `syncToKV()` action and a `loadFromKV()` action.
-5. On app boot (`App.tsx`): call `loadFromKV()` for all stores; merge strategy = KV wins if newer `updatedAt`, else keep local.
-6. On every store write: debounced `pushKey()` (500ms, same pattern as editor save).
-7. Add a subtle sync status indicator in the sidebar footer (●synced / ●syncing / ●offline).
+**10B — Week rollover (Feature B, complete):**
+- Third tab "From previous" in `NewWeekModal.tsx` — source-week dropdown + Roll over / Clone radio.
+- `rolloverContent(source, mode, weekNumber, year)` in `weekUtils.ts` — collects taskItems from source (unchecked only for rollover), wraps them under a "📥 Unassigned" heading + taskList, ABOVE the standard Mon–Fri skeleton.
+- After creation, calls `reconcileTasks(pages)` so carry-over tasks get their `occurrences[]` updated.
 
-**Rollback tag to create before starting:** `pre-cloud-sync` *(already exists)*
-
----
-
-## Next: Feature B — Week Rollover
-
-**Goal:** "New week from previous" option in NewWeekModal — clone full content OR roll over only unchecked tasks.
-
-**Plan:**
-1. Add a "From previous week" tab in `NewWeekModal.tsx`.
-2. Two modes: **Clone** (copy full Tiptap JSON), **Roll over** (walk JSON, keep only unchecked taskItems, reset checked ones).
-3. After creation, run `reconcileTasks(pages)` so carry-over tasks get their `occurrences` updated immediately.
-
-**Rollback tag:** `pre-rollover`
+**10C — Rollover UX polish:**
+- Carried tasks no longer land in day buckets — they go into "📥 Unassigned" so user explicitly assigns them to a day.
+- `taskParser.ts` recognizes "Unassigned" as a valid grouping label (returns `dayLabel: 'Unassigned'`).
+- `KanbanCard.tsx` now shows `task.originWeekId` (e.g., CW15) instead of `task.weekId` (latest) — the truth is where the task was created.
+- `KanbanBoard.tsx` filter chips: replaced two-state "All / This week" with three-state `filterMode: 'all' | 'thisWeek' | 'carryover'`. New chip "↻ Carried over" filters to tasks with `occurrences.length > 1`.
+- Carry-over label format updated: `↻ from CW15 · 3w open` (always shows when multi-occurrence, even if <1 week old).
 
 ---
 

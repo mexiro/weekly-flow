@@ -98,7 +98,7 @@ export function NewWeekModal({ onClose }: NewWeekModalProps) {
       return
     }
 
-    const content = rolloverContent(source.content, rolloverMode)
+    const content = rolloverContent(source.content, rolloverMode, next.weekNumber, next.year)
     const page = { ...createWeekPage(next.weekNumber, next.year), content }
     addPage(page)
     // Reconcile so carry-over tasks get occurrences updated
