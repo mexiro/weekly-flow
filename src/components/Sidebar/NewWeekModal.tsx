@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { createWeekPage, getWeekTitle, getCurrentWeekNumber, getCurrentYear, getNextWeek } from '../../utils/weekUtils'
+import { createWeekPage, getWeekTitle, getCurrentWeekNumber, getCurrentYear, getNextWeek, rolloverContent } from '../../utils/weekUtils'
 import { useWeekStore } from '../../store/weekStore'
 import { useUIStore } from '../../store/uiStore'
+import { useTaskStore } from '../../store/taskStore'
 import type { WeeklyPage } from '../../types'
 
 interface NewWeekModalProps {
@@ -32,13 +33,24 @@ function buildSuggestions(pages: Record<string, WeeklyPage>): { weekNumber: numb
 export function NewWeekModal({ onClose }: NewWeekModalProps) {
   const { pages, addPage } = useWeekStore()
   const { setActiveWeekId } = useUIStore()
-  const [tab, setTab] = useState<'pick' | 'manual'>('pick')
+  const { reconcileTasks } = useTaskStore()
+  const [tab, setTab] = useState<'pick' | 'manual' | 'rollover'>('pick')
   const [manualWeek, setManualWeek] = useState('')
   const [manualYear, setManualYear] = useState(String(getCurrentYear()))
+  const [rolloverMode, setRolloverMode] = useState<'clone' | 'rollover'>('rollover')
+  const [rolloverSourceId, setRolloverSourceId] = useState<string>('')
   const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   const suggestions = buildSuggestions(pages)
+
+  // Default rollover source: most recent existing page
+  const sortedPages = Object.values(pages).sort((a, b) => b.weekNumber - a.weekNumber || b.year - a.year)
+  useEffect(() => {
+    if (tab === 'rollover' && !rolloverSourceId && sortedPages.length > 0) {
+      setRolloverSourceId(sortedPages[0].id)
+    }
+  }, [tab])
 
   useEffect(() => {
     if (tab === 'manual') inputRef.current?.focus()
@@ -62,6 +74,36 @@ export function NewWeekModal({ onClose }: NewWeekModalProps) {
       addPage(page)
       setActiveWeekId(page.id)
     }
+    onClose()
+  }
+
+  function handleRolloverCreate() {
+    const source = pages[rolloverSourceId]
+    if (!source) { setError('Select a source week'); return }
+
+    // Find the next week after source
+    const next = (() => {
+      // find a week slot that doesn't exist yet, starting from current
+      const cur = getCurrentWeekNumber()
+      const curY = getCurrentYear()
+      const id = `CW${cur}-${curY}`
+      if (!pages[id]) return { weekNumber: cur, year: curY }
+      // else pick next after source
+      return getNextWeek(source.weekNumber, source.year)
+    })()
+
+    const newId = `CW${next.weekNumber}-${next.year}`
+    if (pages[newId]) {
+      setError(`CW${next.weekNumber}-${next.year} already exists — use Manual entry`)
+      return
+    }
+
+    const content = rolloverContent(source.content, rolloverMode)
+    const page = { ...createWeekPage(next.weekNumber, next.year), content }
+    addPage(page)
+    // Reconcile so carry-over tasks get occurrences updated
+    setTimeout(() => reconcileTasks({ ...useWeekStore.getState().pages }), 0)
+    setActiveWeekId(page.id)
     onClose()
   }
 
@@ -115,13 +157,13 @@ export function NewWeekModal({ onClose }: NewWeekModalProps) {
           display: 'flex', gap: 4, background: '#f3f4f6',
           borderRadius: 8, padding: 3, marginBottom: 18,
         }}>
-          {(['pick', 'manual'] as const).map(t => (
+          {([['pick', 'Suggestions'], ['manual', 'Manual'], ['rollover', 'From previous']] as const).map(([t, label]) => (
             <button
               key={t}
               onClick={() => { setTab(t); setError('') }}
               style={{
                 flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', cursor: 'pointer',
-                fontSize: 12, fontWeight: 500,
+                fontSize: 11, fontWeight: 500,
                 background: tab === t ? '#fff' : 'transparent',
                 color: tab === t ? '#1a1a1a' : '#6b7280',
                 boxShadow: tab === t ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
@@ -129,7 +171,7 @@ export function NewWeekModal({ onClose }: NewWeekModalProps) {
                 fontFamily: "'Inter', system-ui, sans-serif",
               }}
             >
-              {t === 'pick' ? 'Suggestions' : 'Manual entry'}
+              {label}
             </button>
           ))}
         </div>
@@ -215,6 +257,79 @@ export function NewWeekModal({ onClose }: NewWeekModalProps) {
           </div>
         )}
 
+        {/* Rollover tab */}
+        {tab === 'rollover' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {sortedPages.length === 0 ? (
+              <p style={{ fontSize: 12, color: '#9ca3af', textAlign: 'center', padding: '12px 0' }}>
+                No existing weeks to copy from
+              </p>
+            ) : (
+              <>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 500, color: '#6b7280', display: 'block', marginBottom: 4 }}>
+                    Copy from
+                  </label>
+                  <select
+                    value={rolloverSourceId}
+                    onChange={e => setRolloverSourceId(e.target.value)}
+                    style={{
+                      width: '100%', padding: '8px 10px', borderRadius: 7,
+                      border: '1px solid #e5e7eb', fontSize: 13, outline: 'none',
+                      fontFamily: "'Inter', system-ui, sans-serif",
+                      background: '#fff', cursor: 'pointer',
+                    }}
+                  >
+                    {sortedPages.map(p => (
+                      <option key={p.id} value={p.id}>{p.title}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 500, color: '#6b7280', display: 'block', marginBottom: 6 }}>
+                    Mode
+                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {([
+                      ['rollover', 'Roll over unchecked tasks', 'Copies all content, drops completed ✓ tasks'],
+                      ['clone', 'Clone full content', 'Exact copy including completed tasks'],
+                    ] as const).map(([mode, title, desc]) => (
+                      <label
+                        key={mode}
+                        style={{
+                          display: 'flex', alignItems: 'flex-start', gap: 10,
+                          padding: '10px 12px', borderRadius: 8,
+                          border: `1px solid ${rolloverMode === mode ? 'var(--accent)' : '#e5e7eb'}`,
+                          background: rolloverMode === mode ? 'var(--accent-soft, #e8e6fb)' : '#fff',
+                          cursor: 'pointer', transition: 'all 0.12s',
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="rolloverMode"
+                          value={mode}
+                          checked={rolloverMode === mode}
+                          onChange={() => setRolloverMode(mode)}
+                          style={{ marginTop: 2, accentColor: 'var(--accent)' }}
+                        />
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a' }}>{title}</div>
+                          <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{desc}</div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {error && (
+                  <p style={{ fontSize: 12, color: '#ef4444', margin: 0 }}>{error}</p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
         {/* Footer */}
         <div style={{ display: 'flex', gap: 8, marginTop: 18, justifyContent: 'flex-end' }}>
           <button
@@ -230,6 +345,19 @@ export function NewWeekModal({ onClose }: NewWeekModalProps) {
           {tab === 'manual' && (
             <button
               onClick={handleManualSubmit}
+              style={{
+                padding: '8px 16px', borderRadius: 7, border: 'none',
+                background: 'var(--accent)', color: '#fff',
+                fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                fontFamily: "'Inter', system-ui, sans-serif",
+              }}
+            >
+              Create week
+            </button>
+          )}
+          {tab === 'rollover' && sortedPages.length > 0 && (
+            <button
+              onClick={handleRolloverCreate}
               style={{
                 padding: '8px 16px', borderRadius: 7, border: 'none',
                 background: 'var(--accent)', color: '#fff',

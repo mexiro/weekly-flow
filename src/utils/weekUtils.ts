@@ -115,6 +115,33 @@ export function getTodayDayLabel(): string {
   return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()]
 }
 
+/**
+ * Clone all content from a source page, or roll over only unchecked taskItems.
+ * In rollover mode: taskItem nodes with checked=true are dropped; paragraphs/headings kept.
+ */
+export function rolloverContent(source: JSONContent, mode: 'clone' | 'rollover'): JSONContent {
+  if (mode === 'clone') return JSON.parse(JSON.stringify(source))
+
+  function filterNode(node: JSONContent): JSONContent | null {
+    if (node.type === 'taskItem') {
+      if (node.attrs?.checked) return null
+      return { ...node, content: node.content?.map(filterNode).filter(Boolean) as JSONContent[] }
+    }
+    if (node.type === 'taskList') {
+      const kept = node.content?.map(filterNode).filter(Boolean) as JSONContent[]
+      if (!kept || kept.length === 0) return null
+      return { ...node, content: kept }
+    }
+    if (node.content) {
+      return { ...node, content: node.content.map(filterNode).filter(Boolean) as JSONContent[] }
+    }
+    return node
+  }
+
+  const filtered = filterNode(source)
+  return filtered ?? { type: 'doc', content: [] }
+}
+
 export function createWeekPage(weekNumber: number, year: number): WeeklyPage {
   const id = `CW${weekNumber}-${year}`
   return {
