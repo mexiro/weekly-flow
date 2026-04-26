@@ -18,7 +18,7 @@ export default async function handler(req: Request): Promise<Response> {
 
   if (req.method === 'POST') {
     const body = await req.json()
-    if (!body || typeof body !== 'object' || !body.updatedAt) {
+    if (!body || typeof body !== 'object' || !('updatedAt' in body)) {
       return new Response('Bad payload', { status: 400 })
     }
     await redis.set(KEY, body)
