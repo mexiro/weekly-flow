@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { Redis } from '@upstash/redis'
 import { google } from 'googleapis'
